@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Agenda Personal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        /* Estilos personalizados para la fuente y algunos elementos */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Gris claro de Tailwind */
+            color: #374151; /* Gris oscuro de Tailwind */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* rounded-xl de Tailwind */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md de Tailwind */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .header {
+            background-color: #4f46e5; /* indigo-600 de Tailwind */
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem 0.75rem 0 0; /* rounded-t-xl de Tailwind */
+            margin-bottom: 1rem;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Para responsividad */
+        }
+        .header h1 {
+            flex-grow: 1;
+            text-align: center;
+        }
+        .header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-left: auto; /* Mueve a la derecha */
+        }
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: center;
+            }
+            .header .user-info {
+                margin-top: 1rem;
+                margin-left: 0;
+            }
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem; /* rounded-lg de Tailwind */
+            font-weight: 600; /* font-semibold de Tailwind */
+            transition: background-color 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .button-primary {
+            background-color: #4f46e5; /* indigo-600 de Tailwind */
+            color: white;
+        }
+        .button-primary:hover {
+            background-color: #4338ca; /* indigo-700 de Tailwind */
+        }
+        .button-secondary {
+            background-color: #6b7280; /* gray-500 de Tailwind */
+            color: white;
+        }
+        .button-secondary:hover {
+            background-color: #4b5563; /* gray-600 de Tailwind */
+        }
+        .button-danger {
+            background-color: #ef4444; /* red-500 de Tailwind */
+            color: white;
+        }
+        .button-danger:hover {
+            background-color: #dc2626; /* red-600 de Tailwind */
+        }
+
+        /* Estilos para el modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="datetime-local"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; /* gray-300 de Tailwind */
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .task-item.completed {
+            text-decoration: line-through;
+            color: #6b7280; /* gray-500 */
+        }
+
+        /* Estilos para validación */
+        .input-error {
+            border-color: #ef4444; /* red-500 */
+        }
+        .error-message {
+            color: #ef4444; /* red-500 */
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 0.25rem;
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            background-color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.hide {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        .toast-success {
+            border-left: 4px solid #10b981; /* green-500 */
+        }
+        .toast-error {
+            border-left: 4px solid #ef4444; /* red-500 */
+        }
+        .toast-info {
+            border-left: 4px solid #3b82f6; /* blue-500 */
+        }
+        .toast-warning {
+            border-left: 4px solid #f59e0b; /* yellow-500 */
+        }
+        .toast-message {
+            color: #1f2937;
+            font-weight: 500;
+        }
+
+        /* Pagination styles */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .pagination-button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #e5e7eb; /* gray-200 */
+            color: #374151; /* gray-700 */
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .pagination-button:hover:not(:disabled) {
+            background-color: #d1d5db; /* gray-300 */
+        }
+        .pagination-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination-button.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+
+        /* SortableJS styles for drag-and-drop feedback */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #cbd5e1; /* gray-300 */
+            border: 2px dashed #6b7280; /* gray-500 */
+        }
+        .sortable-chosen {
+            /* Estilo para el elemento que se está arrastrando */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="header">
+        <h1 class="text-3xl font-bold">Mi Agenda Personal</h1>
+        <div id="user-info-section" class="user-info">
+            <span id="logged-in-username" class="text-white text-lg font-medium"></span>
+            <button id="view-agenda-btn" class="button button-secondary text-sm px-4 py-2" onclick="window.location.href='agenda.html'">Ver Agenda</button>
+            <button id="view-charts-btn" class="button button-secondary text-sm px-4 py-2" onclick="window.location.href='charts.html'">Ver Estadísticas</button>
+            <button id="logout-btn" class="button button-secondary text-sm px-4 py-2">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div id="agenda-content" class="container grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-2 card">
+            <h2 class="text-2xl font-semibold mb-4 text-indigo-700">Lista de Tareas</h2>
+            <div class="flex flex-wrap gap-4 mb-4 items-center">
+                <div class="flex-grow">
+                    <label for="task-search" class="sr-only">Buscar Tareas</label>
+                    <input type="text" id="task-search" placeholder="Buscar tareas..." class="w-full px-4 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="task-filter" class="text-sm font-medium text-gray-700">Filtrar:</label>
+                    <select id="task-filter" class="px-3 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="all">Todas</option>
+                        <option value="pending">Pendientes</option>
+                        <option value="completed">Completadas</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="task-sort" class="text-sm font-medium text-gray-700">Ordenar por:</label>
+                    <select id="task-sort" class="px-3 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="orden_asc">Orden (Asc)</option>
+                        <option value="orden_desc">Orden (Desc)</option>
+                        <option value="fecha_vencimiento_asc">Vencimiento (Asc)</option>
+                        <option value="fecha_vencimiento_desc">Vencimiento (Desc)</option>
+                        <option value="titulo_asc">Título (Asc)</option>
+                        <option value="titulo_desc">Título (Desc)</option>
+                        <option value="completada_asc">Estado (Pendientes primero)</option>
+                        <option value="completada_desc">Estado (Completadas primero)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="task-list" class="space-y-4">
+                <p class="text-gray-500">Cargando tareas...</p>
+            </div>
+            <button id="add-task-btn" class="button button-primary mt-6 w-full">Añadir Nueva Tarea</button>
+            <div id="task-pagination" class="pagination-controls"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-2xl font-semibold mb-4 text-indigo-700">Horario Personal</h2>
+            <div class="flex flex-wrap gap-4 mb-4 items-center">
+                <div class="flex-grow">
+                    <label for="event-search" class="sr-only">Buscar Eventos</label>
+                    <input type="text" id="event-search" placeholder="Buscar eventos..." class="w-full px-4 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="event-sort" class="text-sm font-medium text-gray-700">Ordenar por:</label>
+                    <select id="event-sort" class="px-3 py-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="orden_asc">Orden (Asc)</option>
+                        <option value="orden_desc">Orden (Desc)</option>
+                        <option value="fecha_inicio_asc">Inicio (Asc)</option>
+                        <option value="fecha_inicio_desc">Inicio (Desc)</option>
+                        <option value="titulo_asc">Título (Asc)</option>
+                        <option value="titulo_desc">Título (Desc)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="personal-schedule" class="space-y-4">
+                <p class="text-gray-500">Cargando eventos...</p>
+            </div>
+            <button id="add-event-btn" class="button button-primary mt-6 w-full">Añadir Nuevo Evento</button>
+            <div id="event-pagination" class="pagination-controls"></div>
+        </div>
+    </div>
+
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="task-modal-title">Añadir Nueva Tarea</h3>
+                <button class="modal-close-btn" data-modal="task-modal">&times;</button>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="task-title">Título</label>
+                    <input type="text" id="task-title" required class="focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="task-title-error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="task-description">Descripción (Opcional)</label>
+                    <textarea id="task-description" class="focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    <div id="task-description-error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="task-due-date">Fecha de Vencimiento (Opcional)</label>
+                    <input type="datetime-local" id="task-due-date" class="focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="task-due-date-error" class="error-message"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="button button-secondary" data-modal="task-modal">Cancelar</button>
+                    <button type="submit" class="button button-primary">Guardar Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="event-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="event-modal-title">Añadir Nuevo Evento</h3>
+                <button class="modal-close-btn" data-modal="event-modal">&times;</button>
+            </div>
+            <form id="event-form">
+                <input type="hidden" id="event-id">
+                <div class="form-group">
+                    <label for="event-title">Título</label>
+                    <input type="text" id="event-title" required class="focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="event-title-error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="event-description">Descripción (Opcional)</label>
+                    <textarea id="event-description" class="focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    <div id="event-description-error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="event-start-date">Fecha y Hora de Inicio</label>
+                    <input type="datetime-local" id="event-start-date" required class="focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="event-start-date-error" class="error-message"></div>
+                </div>
+                <div class="form-group">
+                    <label for="event-end-date">Fecha y Hora de Fin</label>
+                    <input type="datetime-local" id="event-end-date" required class="focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="event-end-date-error" class="error-message"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="button button-secondary" data-modal="event-modal">Cancelar</button>
+                    <button type="submit" class="button button-primary">Guardar Evento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmation-modal-title">Confirmar Acción</h3>
+                <button class="modal-close-btn" data-modal="confirmation-modal">&times;</button>
+            </div>
+            <p id="confirmation-modal-message" class="mb-6 text-gray-700">¿Estás seguro de que quieres realizar esta acción?</p>
+            <div class="form-actions">
+                <button type="button" class="button button-secondary" id="confirm-cancel-btn">Cancelar</button>
+                <button type="button" class="button button-danger" id="confirm-action-btn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="js/common.js"></script>
+    <script src="js/agenda.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Verificar si el usuario está logueado
+            const sessionCheck = await apiRequest('api/session_check.php', 'GET');
+            if (!sessionCheck.isLoggedIn) {
+                window.location.href = 'index.html'; // Redirigir al login si no está logueado
+                return;
+            }
+            document.getElementById('logged-in-username').textContent = `Hola, ${sessionCheck.username}!`;
+
+            // Initialize agenda-specific functionalities
+            initializeAgenda();
+        });
+    </script>
+</body>
+</html>
+
